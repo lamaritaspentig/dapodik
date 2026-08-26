@@ -4,47 +4,160 @@
 // =========================
 // API EKSTERNAL GOOGLE APPS SCRIPT
 // =========================
-const GAS_WEBAPP_BASE='https://script.google.com/macros/s/';
+const GAS_WEBAPP_BASE='https://script.google.com';
+let activeApiUrl='';
+
+function normalizeDeploymentId(value){
+  let v=String(value||'').trim();
+
+  // Jika tanpa sengaja ditempel URL, ambil Deployment ID saja.
+  const match=v.match(/\/s\/(AKfy[a-zA-Z0-9_-]+)\/(?:exec|dev)(?:[?#].*)?$/i);
+  if(match) v=match[1];
+
+  return /^AKfy[a-zA-Z0-9_-]+$/.test(v) ? v : '';
+}
+
+function normalizeWorkspaceDomain(value){
+  return String(value||'')
+    .trim()
+    .replace(/^https?:\/\//i,'')
+    .replace(/^script\.google\.com\/a\//i,'')
+    .replace(/^\/+|\/+$/g,'');
+}
+
+function getApiCandidates(){
+  const id=normalizeDeploymentId(APP.DEPLOYMENT_ID);
+  if(!id) return [];
+
+  const domain=normalizeWorkspaceDomain(APP.WORKSPACE_DOMAIN);
+  const urls=[];
+
+  if(domain){
+    urls.push(`${GAS_WEBAPP_BASE}/a/${encodeURIComponent(domain)}/macros/s/${id}/exec`);
+  }
+
+  urls.push(`${GAS_WEBAPP_BASE}/macros/s/${id}/exec`);
+  return [...new Set(urls)];
+}
 
 function getApiUrl(){
-  const id=String(APP.DEPLOYMENT_ID||'').trim();
-  if(!/^AKfy[a-zA-Z0-9_-]+$/.test(id)) return '';
-  return GAS_WEBAPP_BASE + id + '/exec';
+  if(activeApiUrl) return activeApiUrl;
+  return getApiCandidates()[0]||'';
 }
 
 function isApiConfigured(){
-  return !!getApiUrl();
+  return getApiCandidates().length>0;
 }
 
-function apiGet(action,params={}){
+function jsonpRequest_(base,action,params={},timeoutMs=18000){
   return new Promise((resolve,reject)=>{
-    const base=getApiUrl();
-    if(!base){ reject(new Error('Sistem belum terhubung ke server data.')); return; }
-
     const callback='__gasJsonp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const script=document.createElement('script');
-    const timer=setTimeout(()=>finish(new Error('Koneksi API timeout.')),45000);
+    let settled=false;
+
+    const timer=setTimeout(()=>{
+      finish(new Error('Koneksi API timeout.'));
+    },timeoutMs);
 
     function cleanup(){
       clearTimeout(timer);
       if(script.parentNode) script.parentNode.removeChild(script);
       try{ delete window[callback]; }catch(_){ window[callback]=undefined; }
     }
+
     function finish(err,data){
+      if(settled) return;
+      settled=true;
       cleanup();
       err ? reject(err) : resolve(data);
     }
 
     window[callback]=(data)=>finish(null,data);
-    script.onerror=()=>finish(new Error('Tidak dapat terhubung ke API Google Apps Script. Pastikan deployment dapat diakses oleh Anyone.'));
-    const query=new URLSearchParams({action,callback,_:String(Date.now())});
+    script.onerror=()=>finish(new Error('Endpoint Web App tidak dapat dimuat.'));
+
+    const query=new URLSearchParams({
+      action,
+      callback,
+      _:String(Date.now())
+    });
+
     Object.entries(params||{}).forEach(([key,value])=>{
       if(value!==undefined && value!==null) query.set(key,String(value));
     });
-    const sep=base.includes('?')?'&':'?';
-    script.src=base + sep + query.toString();
+
+    script.src=base + '?' + query.toString();
     document.head.appendChild(script);
   });
+}
+
+async function resolveApiUrl(){
+  if(activeApiUrl) return activeApiUrl;
+
+  const candidates=getApiCandidates();
+  if(!candidates.length){
+    throw new Error('Deployment ID Google Apps Script belum valid.');
+  }
+
+  const errors=[];
+
+  for(const base of candidates){
+    try{
+      const ping=await jsonpRequest_(base,'ping',{},15000);
+      if(ping && ping.ok){
+        activeApiUrl=base;
+        return activeApiUrl;
+      }
+      errors.push(base+' → ping tidak valid');
+    }catch(err){
+      errors.push(base+' → '+(err?.message||'gagal'));
+    }
+  }
+
+  console.error('Semua kandidat Web App gagal:',errors);
+
+  throw new Error(
+    'Tidak dapat mengakses Web App. Pastikan DEPLOYMENT_ID berasal dari URL produksi /exec, bukan /dev, dan deployment dapat diakses oleh Anyone.'
+  );
+}
+
+async function apiGet(action,params={}){
+  const candidates=getApiCandidates();
+  if(!candidates.length){
+    throw new Error('Sistem belum terhubung ke server data.');
+  }
+
+  if(activeApiUrl){
+    try{
+      return await jsonpRequest_(activeApiUrl,action,params,45000);
+    }catch(err){
+      activeApiUrl='';
+    }
+  }
+
+  let lastError=null;
+
+  if(action==='ping'){
+    for(const base of candidates){
+      try{
+        const data=await jsonpRequest_(base,action,params,18000);
+        if(data?.ok){
+          activeApiUrl=base;
+          return data;
+        }
+        lastError=new Error(data?.message||'Respons ping tidak valid.');
+      }catch(err){
+        lastError=err;
+      }
+    }
+  }else{
+    const base=await resolveApiUrl();
+    return jsonpRequest_(base,action,params,45000);
+  }
+
+  throw new Error(
+    'Tidak dapat mengakses Web App. Pastikan DEPLOYMENT_ID berasal dari URL /exec, bukan /dev. '+
+    (lastError?.message||'')
+  );
 }
 
 function makeApiRequestId(){
@@ -149,52 +262,47 @@ async function testPostRuntime(){
   return res;
 }
 
-function apiPost(action,payload,tokenOverride){
-  return new Promise((resolve,reject)=>{
-    const base=getApiUrl();
-    if(!base){
-      reject(new Error('Sistem belum terhubung ke server data.'));
-      return;
-    }
+async function apiPost(action,payload,tokenOverride){
+  const base=await resolveApiUrl();
 
-    const requestId=makeApiRequestId();
-    const body=new URLSearchParams({
-      action:String(action||''),
-      requestId,
-      token:tokenOverride!==undefined ? String(tokenOverride||'') : String(state.auth?.token||''),
-      payload:JSON.stringify(payload ?? {})
-    });
-
-    let dispatchError=null;
-
-    // Request dibuat sebagai "simple request" sehingga tidak memerlukan
-    // CORS response header dari Apps Script. Respons fetch bersifat opaque;
-    // hasil sebenarnya tetap dibaca lewat endpoint JSONP postresultbatch.
-    fetch(base,{
-      method:'POST',
-      mode:'no-cors',
-      credentials:'omit',
-      cache:'no-store',
-      redirect:'follow',
-      headers:{
-        'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'
-      },
-      body:body.toString()
-    }).catch(err=>{
-      console.error('Pengiriman POST GAS gagal:',err);
-      dispatchError=err;
-    });
-
-    const timeout=['import','exportdata'].includes(action) ? 180000 : 120000;
-
-    readPostResult(requestId,timeout)
-      .then(resolve)
-      .catch(err=>{
-        if(dispatchError){
-          reject(new Error('Request POST tidak dapat dikirim ke Google Apps Script.'));
-        }else{
-          reject(err);
-        }
-      });
+  const requestId=makeApiRequestId();
+  const body=new URLSearchParams({
+    action:String(action||''),
+    requestId,
+    token:tokenOverride!==undefined
+      ? String(tokenOverride||'')
+      : String(state.auth?.token||''),
+    payload:JSON.stringify(payload ?? {})
   });
+
+  let dispatchError=null;
+
+  fetch(base,{
+    method:'POST',
+    mode:'no-cors',
+    credentials:'omit',
+    cache:'no-store',
+    redirect:'follow',
+    headers:{
+      'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'
+    },
+    body:body.toString()
+  }).catch(err=>{
+    console.error('Pengiriman POST GAS gagal:',err);
+    dispatchError=err;
+  });
+
+  const timeout=['import','exportdata'].includes(action)
+    ? 180000
+    : 120000;
+
+  try{
+    return await readPostResult(requestId,timeout);
+  }catch(err){
+    if(dispatchError){
+      throw new Error('Request POST tidak dapat dikirim ke Google Apps Script.');
+    }
+    throw err;
+  }
 }
+
