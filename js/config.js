@@ -16,8 +16,8 @@ const APP = {
 
   // Isi HANYA Deployment ID dari Web App PRODUKSI yang berakhir /exec.
   // Jangan gunakan Deployment ID dari URL /dev.
-  // Contoh: AKfycbXXXXXXXXXXXXXXXXXXXXXXXX
-  DEPLOYMENT_ID: 'TEMPEL_DEPLOYMENT_ID_EXEC_DI_SINI',
+  // Contoh: AKfycbXXXXXXXXXXXXXXXXXXXXXXXX https://script.google.com/macros/s/AKfycbyrnDiatexqNX563QOmtVqk6NKjrsazB5ddxmlB8PcvWouC8nGkCerCLXi7tdVhByJA-A/exec
+  DEPLOYMENT_ID: 'AKfycbyrnDiatexqNX563QOmtVqk6NKjrsazB5ddxmlB8PcvWouC8nGkCerCLXi7tdVhByJA-A',
 
   // Domain Google Workspace. Kosongkan ('') jika bukan akun Workspace.
   WORKSPACE_DOMAIN: 'admin.smp.belajar.id',
