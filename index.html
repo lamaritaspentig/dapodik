@@ -412,10 +412,25 @@
     .login-alert.danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
     .login-alert.success{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
     .login-api-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:17px}
-    .login-api-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:#64748b}
+    .login-api-status{display:inline-flex;align-items:center;gap:7px;min-height:18px;font-size:11px;color:#64748b}
     .login-api-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.13)}
-    .login-api-status.online{color:#047857}.login-api-status.online .login-api-dot{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.13)}
-    .login-api-status.offline{color:#b45309}.login-api-status.offline .login-api-dot{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.14)}
+    .login-api-status.online{color:#047857}
+    .login-api-status.online .login-api-dot{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.13)}
+    .login-api-status.offline{color:#b45309}
+    .login-api-status.offline .login-api-dot{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.14)}
+    .login-api-status.checking{width:18px;height:18px;justify-content:center;gap:0;color:#64748b}
+    .login-api-status.checking .login-api-dot{
+      width:14px;height:14px;
+      background:transparent;
+      box-shadow:none;
+      border:2px solid #cbd5e1;
+      border-top-color:#4f46e5;
+      animation:loginApiSpin .7s linear infinite;
+    }
+    .login-api-status #loginApiText{display:none}
+    .login-api-status.online,
+    .login-api-status.offline{width:18px;height:18px;justify-content:center;gap:0}
+    @keyframes loginApiSpin{to{transform:rotate(360deg)}}
     .login-version{font-size:10px;color:#94a3b8}
     .user-chip{display:flex;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:11px}
     .user-avatar{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#eef2ff;color:#4169e1;font-weight:800}
@@ -1523,8 +1538,11 @@
           <div class="d-flex gap-2"><i class="bi bi-info-circle text-primary mt-1"></i><div><strong>Akses Siswa</strong><br>Gunakan <strong>NISN</strong> sebagai username dan <strong>tanggal lahir dengan format DDMMYYYY</strong> sebagai kata sandi.</div></div>
         </div>
         <div class="login-api-row">
-          <div class="login-api-status" id="loginApiStatus"><span class="login-api-dot"></span><span id="loginApiText">Menyiapkan koneksi...</span></div>
-          <div class="login-version">v28</div>
+          <div class="login-api-status checking" id="loginApiStatus" title="Menyiapkan koneksi..." aria-label="Menyiapkan koneksi...">
+            <span class="login-api-dot" aria-hidden="true"></span>
+            <span id="loginApiText">Menyiapkan koneksi...</span>
+          </div>
+          <div class="login-version" id="loginVersion"></div>
         </div>
       </div>
     </section>
