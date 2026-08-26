@@ -10,13 +10,17 @@
 // Jika URL Web App berakhir dengan /s/AKfycbXXXXXXXX/exec
 // maka isi: DEPLOYMENT_ID: 'AKfycbXXXXXXXX'
 // ============================================================
-const UI_VERSION='50.0-deployment-id-clean';
+const UI_VERSION='51.0-workspace-exec-auto';
 const APP = {
   VERSION: '46.0-clean-stable',
 
-  // Isi HANYA Deployment ID dari Web App /exec.
+  // Isi HANYA Deployment ID dari Web App PRODUKSI yang berakhir /exec.
+  // Jangan gunakan Deployment ID dari URL /dev.
   // Contoh: https://script.google.com/macros/s/AKfycbynWbliUz7O-tZT47uzaO1BGEne_cHCLEI-LV4PFFxUEoclsWK9YDl1mlshtFoZZDvZRQ/exec
   DEPLOYMENT_ID: 'AKfycbynWbliUz7O-tZT47uzaO1BGEne_cHCLEI-LV4PFFxUEoclsWK9YDl1mlshtFoZZDvZRQ',
+
+  // Domain Google Workspace. Kosongkan ('') jika bukan akun Workspace.
+  WORKSPACE_DOMAIN: 'admin.smp.belajar.id',
 
   schoolName: 'UPT SPF SMP NEGERI 3 MAKASSAR',
   agama: ['Islam','Kristen','Katholik','Hindu','Budha','Khonghucu','Kepercayaan kpd Tuhan YME','Tidak diisi','Lainnya']
