@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal Data Peserta Didik</title>
+  <!-- JavaScript aplikasi dipisahkan menjadi modul di folder js/ -->
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --sidebar:#172039;
+      --sidebar-2:#1d2947;
+      --page:#f4f7fb;
+      --border:#e5e9f2;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --primary:#4169e1;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      width:100%;
+      height:100%;
+      margin:0;
+    }
+    body{
+      overflow:hidden;
+      background:var(--page);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      font-size:14px;
+    }
+    .app-shell{
+      height:100vh;
+      min-height:0;
+      display:flex;
+      overflow:hidden;
+    }
+    .sidebar{
+      width:250px;
+      background:linear-gradient(180deg,var(--sidebar),var(--sidebar-2));
+      color:#fff;
+      position:fixed;
+      inset:0 auto 0 0;
+      height:100vh;
+      z-index:1030;
+      overflow-y:auto;
+      transition:.25s ease;
+    }
+    .brand{
+      height:68px;
+      display:flex;
+      align-items:center;
+      gap:11px;
+      padding:0 22px;
+      font-weight:800;
+      font-size:18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .brand-mark{
+      width:36px;height:36px;border-radius:11px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.12);
+    }
+    .school-name{
+      margin:18px 18px 10px;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05);
+      border-radius:12px;
+      font-size:12px;
+      line-height:1.45;
+      color:#e5e7eb;
+    }
+    .nav-label{
+      padding:16px 22px 8px;
+      color:#8ea0c5;
+      text-transform:uppercase;
+      font-size:10px;
+      letter-spacing:.11em;
+      font-weight:700;
+    }
+    .side-link{
+      width:calc(100% - 20px);
+      margin:3px 10px;
+      border:0;
+      background:transparent;
+      color:#cbd5e1;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:11px 13px;
+      border-radius:10px;
+      text-align:left;
+      transition:.15s ease;
+    }
+    .side-link:hover,.side-link.active{
+      color:#fff;
+      background:rgba(255,255,255,.1);
+    }
+    .side-link i{font-size:17px}
+    .main{
+      margin-left:250px;
+      width:calc(100% - 250px);
+      height:100vh;
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      scroll-behavior:smooth;
+    }
+    .topbar{
+      height:68px;
+      position:sticky;top:0;z-index:1020;
+      background:#fff;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 26px;
+    }
+    .content{
+      padding:24px 26px 40px;
+      min-height:calc(100vh - 68px);
+      overflow:visible;
+    }
+    .page-title{font-size:22px;font-weight:800;margin:0}
+    .page-subtitle{color:var(--muted);font-size:12px;margin-top:3px}
+    .card{
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:0 5px 18px rgba(26,39,67,.035);
+    }
+    .card-header{
+      background:#fff;
+      border-bottom:1px solid var(--border);
+      border-radius:14px 14px 0 0!important;
+      padding:16px 18px;
+    }
+    .stat-card .card-body{padding:18px}
+    .stat-icon{
+      width:42px;height:42px;border-radius:12px;
+      display:grid;place-items:center;font-size:19px;
+      background:#eef2ff;color:#4f46e5;
+    }
+    .stat-value{font-size:25px;font-weight:800;line-height:1}
+    .stat-label{font-size:12px;color:var(--muted);margin-top:7px}
+    .toolbar{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    }
+    .table{margin-bottom:0}
+    .table thead th{
+      white-space:nowrap;
+      font-size:11px;
+      letter-spacing:.035em;
+      text-transform:uppercase;
+      color:#6b7280;
+      background:#f8fafc;
+      border-bottom-width:1px;
+    }
+    .table td{vertical-align:middle}
+    .table-responsive{
+      border-radius:0 0 14px 14px;
+      overflow-x:auto!important;
+      overflow-y:visible;
+      -webkit-overflow-scrolling:touch;
+    }
+    .badge-soft{
+      display:inline-flex;align-items:center;
+      border-radius:999px;padding:5px 9px;
+      font-size:11px;font-weight:700;
+    }
+    .badge-l{background:#e8f1ff;color:#2563eb}
+    .badge-p{background:#fff0f5;color:#db2777}
+    .badge-active{background:#ecfdf5;color:#059669}
+    .badge-inactive{background:#f3f4f6;color:#6b7280}
+    .view{display:none}
+    .view.active{display:block}
+    .empty-state{padding:44px;text-align:center;color:var(--muted)}
+    .empty-icon{font-size:38px;opacity:.5;margin-bottom:10px}
+    .loading-layer{
+      position:fixed;inset:0;background:rgba(255,255,255,.78);
+      z-index:2000;display:none;align-items:center;justify-content:center;
+      backdrop-filter:blur(2px);
+    }
+    .loading-layer.show{display:flex}
+    .loading-box{
+      background:#fff;border:1px solid var(--border);
+      border-radius:14px;padding:20px 24px;
+      box-shadow:0 12px 40px rgba(0,0,0,.08);
+      display:flex;align-items:center;gap:12px;font-weight:700;
+    }
+    .toast-container{
+      z-index:3000;
+      width:min(390px,calc(100vw - 28px));
+      padding:0 !important;
+      right:18px !important;
+      bottom:18px !important;
+    }
+    .app-toast{
+      --toast-accent:#4169e1;
+      width:100%;
+      max-width:390px;
+      background:#fff;
+      color:#1e293b;
+      border:1px solid #e5e7eb !important;
+      border-left:4px solid var(--toast-accent) !important;
+      border-radius:14px;
+      box-shadow:0 16px 42px rgba(15,23,42,.14);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .app-toast.toast-success{--toast-accent:#16a34a}
+    .app-toast.toast-danger{--toast-accent:#dc2626}
+    .app-toast.toast-warning{--toast-accent:#d97706}
+    .app-toast.toast-info{--toast-accent:#4169e1}
+    .app-toast-inner{
+      display:grid;
+      grid-template-columns:38px minmax(0,1fr) 28px;
+      gap:11px;
+      align-items:start;
+      padding:13px 13px 13px 12px;
+    }
+    .app-toast-icon{
+      width:36px;height:36px;border-radius:11px;
+      display:flex;align-items:center;justify-content:center;
+      background:color-mix(in srgb,var(--toast-accent) 11%,white);
+      color:var(--toast-accent);
+      font-size:17px;
+      flex:0 0 auto;
+    }
+    .app-toast-copy{min-width:0;padding-top:1px}
+    .app-toast-title{
+      font-size:12px;font-weight:800;color:#0f172a;
+      margin:0 0 3px;line-height:1.3;
+    }
+    .app-toast-message{
+      font-size:12px;color:#64748b;line-height:1.5;
+      overflow-wrap:anywhere;
+    }
+    .app-toast .btn-close{
+      width:26px;height:26px;padding:0;margin:0;
+      opacity:.45;border-radius:8px;
+      align-self:start;
+    }
+    .app-toast .btn-close:hover{opacity:.75;background-color:#f1f5f9}
+    .app-toast-progress{
+      height:3px;background:#eef2f7;overflow:hidden;
+    }
+    .app-toast-progress > span{
+      display:block;height:100%;width:100%;
+      background:var(--toast-accent);
+      transform-origin:left center;
+      animation:toastProgress 4.8s linear forwards;
+    }
+    @keyframes toastProgress{
+      from{transform:scaleX(1)}
+      to{transform:scaleX(0)}
+    }
+    @media(max-width:575.98px){
+      .toast-container{
+        width:calc(100vw - 24px);
+        right:12px !important;
+        bottom:12px !important;
+      }
+      .app-toast{max-width:none}
+      .app-toast-inner{
+        grid-template-columns:34px minmax(0,1fr) 26px;
+        gap:9px;padding:12px 11px;
+      }
+      .app-toast-icon{width:34px;height:34px}
+    }
+    .drop-zone{
+      border:2px dashed #cbd5e1;border-radius:14px;padding:34px 18px;
+      background:#f8fafc;text-align:center;cursor:pointer;transition:.15s;
+    }
+    .drop-zone:hover,.drop-zone.dragover{border-color:#4169e1;background:#f3f6ff}
+    .preview-wrap{max-height:360px;overflow:auto}
+    .section-menu{
+      display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px
+    }
+    .section-menu .btn.active{background:#1f2937;color:#fff;border-color:#1f2937}
+    .modal-content{border:0;border-radius:16px}
+    .modal-header,.modal-footer{border-color:var(--border)}
+    .form-label{font-size:12px;font-weight:700;color:#4b5563}
+    .form-control,.form-select{border-color:#dce2eb;border-radius:9px}
+    .form-control:focus,.form-select:focus{
+      border-color:#8da5ff;box-shadow:0 0 0 .2rem rgba(65,105,225,.12)
+    }
+    .pagination .page-link{font-size:12px}
+    .mobile-toggle{display:none}
+    .small-note{font-size:11px;color:var(--muted)}
+    .db-status{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:6px 10px;border-radius:999px;background:#ecfdf5;
+      color:#047857;font-size:11px;font-weight:700;
+    }
+    .db-dot{width:7px;height:7px;border-radius:50%;background:#10b981}
+
+    #view-students .table{min-width:1500px}
+    #view-students .table td,#view-students .table th{white-space:nowrap}
+    #view-students .table td:nth-child(10){white-space:normal;min-width:220px}
+    #view-students.student-readonly .btn-outline-danger{display:none!important}
+
+    /* Login fields - cleaner professional proportions */
+    .login-field{
+      position:relative;
+      border:1px solid #d9e1eb;
+      border-radius:14px;
+      background:#f8fafc;
+      transition:.18s ease;
+      overflow:hidden;
+    }
+    .login-field:focus-within{
+      border-color:#7188ee;
+      background:#fff;
+      box-shadow:0 0 0 .22rem rgba(65,105,225,.10);
+    }
+    .login-field-icon{
+      left:15px;
+      width:20px;
+      text-align:center;
+      color:#8492a6;
+    }
+    .login-input{
+      height:52px;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      padding:0 46px 0 48px;
+      font-size:13.5px;
+      box-shadow:none!important;
+    }
+    .login-input::placeholder{color:#a1aab8}
+    .password-toggle{
+      right:7px;
+      width:38px;
+      height:38px;
+      border-radius:10px;
+    }
+    .login-submit{height:52px;border-radius:13px}
+
+    @media(max-width:991.98px){
+      .sidebar{transform:translateX(-100%)}
+      .sidebar.open{transform:translateX(0)}
+      .main{margin-left:0;width:100%}
+      .mobile-toggle{display:inline-flex}
+      .content{padding:18px 14px 30px}
+      .topbar{padding:0 14px}
+    }
+    @media(max-width:575.98px){
+      .page-title{font-size:18px}
+      .topbar .db-status span:last-child{display:none}
+      .content{padding-top:14px}
+    }
+  
+    .login-screen{
+      position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;
+      min-height:100vh;padding:28px;overflow:auto;
+      background:
+        radial-gradient(circle at 8% 12%,rgba(80,116,255,.22),transparent 31%),
+        radial-gradient(circle at 92% 88%,rgba(16,185,129,.13),transparent 29%),
+        linear-gradient(135deg,#0f172a 0%,#172554 52%,#111827 100%);
+    }
+    .login-screen.d-none{display:none!important}
+    .login-shell{
+      width:min(1040px,100%);min-height:620px;background:#fff;border-radius:26px;overflow:hidden;
+      display:grid;grid-template-columns:1.05fr .95fr;
+      box-shadow:0 35px 95px rgba(2,6,23,.38);border:1px solid rgba(255,255,255,.12);
+    }
+    .login-brand-panel{
+      position:relative;overflow:hidden;padding:52px 48px;color:#fff;
+      background:linear-gradient(155deg,#16213e 0%,#203a72 62%,#2952a3 100%);
+      display:flex;flex-direction:column;justify-content:space-between;
+    }
+    .login-brand-panel:before,.login-brand-panel:after{content:'';position:absolute;border-radius:50%;pointer-events:none}
+    .login-brand-panel:before{width:330px;height:330px;right:-160px;top:-120px;background:rgba(255,255,255,.07)}
+    .login-brand-panel:after{width:240px;height:240px;left:-115px;bottom:-110px;background:rgba(255,255,255,.055)}
+    .login-brand-content,.login-brand-footer{position:relative;z-index:1}
+    .school-mark{width:58px;height:58px;border-radius:17px;display:grid;place-items:center;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);font-size:27px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .login-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#bfdbfe;font-weight:800;margin-top:28px}
+    .login-brand-title{font-size:34px;line-height:1.14;font-weight:850;letter-spacing:-.03em;margin:10px 0 14px;max-width:450px}
+    .login-brand-desc{max-width:440px;color:#dbeafe;line-height:1.75;font-size:13px;margin:0}
+    .login-feature-list{display:grid;gap:12px;margin-top:34px}
+    .login-feature{display:flex;align-items:center;gap:11px;color:#e8efff;font-size:12px}
+    .login-feature-icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.09)}
+    .login-brand-footer{padding-top:30px;font-size:11px;color:#bfdbfe;display:flex;align-items:center;gap:8px}
+    .login-form-panel{padding:48px 48px 40px;display:flex;flex-direction:column;justify-content:center;background:#fff}
+    .login-mobile-brand{display:none}
+    .login-role-pill{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:7px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:800;margin-bottom:18px}
+    .login-title{font-size:28px;font-weight:850;letter-spacing:-.025em;margin:0;color:#111827}
+    .login-sub{color:#6b7280;font-size:13px;line-height:1.6;margin:7px 0 26px}
+    .login-body{padding:0}
+    .login-label{font-size:12px;font-weight:750;color:#374151;margin-bottom:7px}
+    .login-field{position:relative}
+    .login-field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:17px;z-index:3;pointer-events:none}
+    .login-input{height:49px;border-radius:12px;border:1px solid #dbe2ea;padding-left:43px;font-size:14px;background:#fbfcfe;transition:.18s ease}
+    .login-input:focus{background:#fff;border-color:#7289ff;box-shadow:0 0 0 .22rem rgba(79,70,229,.11)}
+    .login-password-input{padding-right:48px}
+    .password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;width:36px;height:36px;border-radius:9px;z-index:4}
+    .password-toggle:hover{background:#f1f5f9;color:#334155}
+    .login-submit{height:50px;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 9px 24px rgba(65,105,225,.2)}
+    .login-help{margin-top:18px;padding:13px 14px;border-radius:12px;background:#f8fafc;border:1px solid #e7ebf1;color:#64748b;font-size:11.5px;line-height:1.55}
+    .login-help strong{color:#334155}
+    .login-alert{display:none;margin-bottom:16px;padding:11px 12px;border-radius:11px;font-size:12px;line-height:1.45}
+    .login-alert.show{display:flex;align-items:flex-start;gap:9px}
+    .login-alert.danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    .login-alert.success{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+    .login-api-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:17px}
+    .login-api-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;color:#64748b}
+    .login-api-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.13)}
+    .login-api-status.online{color:#047857}.login-api-status.online .login-api-dot{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.13)}
+    .login-api-status.offline{color:#b45309}.login-api-status.offline .login-api-dot{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.14)}
+    .login-version{font-size:10px;color:#94a3b8}
+    .user-chip{display:flex;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:11px}
+    .user-avatar{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#eef2ff;color:#4169e1;font-weight:800}
+    .student-only-note{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:12px}
+    @media(max-width:820px){
+      .login-screen{padding:16px;align-items:flex-start}
+      .login-shell{display:block;min-height:auto;border-radius:22px;max-width:500px;margin:auto}
+      .login-brand-panel{display:none}
+      .login-form-panel{padding:34px 26px 28px}
+      .login-mobile-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+      .login-mobile-brand .school-mark{width:46px;height:46px;border-radius:14px;background:#eef2ff;color:#4169e1;border:0;font-size:21px}
+      .login-mobile-school{font-size:12px;line-height:1.35;font-weight:800;color:#1f2937}
+      .login-title{font-size:24px}
+    }
+    @media(max-width:420px){.login-screen{padding:0;background:#fff}.login-shell{border-radius:0;box-shadow:none;min-height:100vh}.login-form-panel{padding:30px 20px}}
+  
+    /* Aktivitas Admin */
+    .notification-btn{
+      position:relative;width:38px;height:38px;border-radius:11px;display:inline-flex;
+      align-items:center;justify-content:center;border:1px solid var(--border);
+      background:#fff;color:#475569;transition:.18s ease;
+    }
+    .notification-btn:hover{background:#f8fafc;color:var(--primary)}
+    .notification-badge{
+      position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;
+      border-radius:999px;background:#dc2626;color:#fff;border:2px solid #fff;
+      font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;
+    }
+    .activity-list{display:flex;flex-direction:column}
+    .activity-item{
+      display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;
+      align-items:flex-start;padding:14px 0;border-bottom:1px solid #eef2f7;
+    }
+    .activity-item:last-child{border-bottom:0}
+    .activity-icon{
+      width:38px;height:38px;border-radius:12px;display:flex;align-items:center;
+      justify-content:center;background:#eef2ff;color:#4f46e5;font-size:16px;
+    }
+    .activity-icon.student{background:#ecfdf5;color:#059669}
+    .activity-icon.admin{background:#eff6ff;color:#2563eb}
+    .activity-icon.import{background:#fef3c7;color:#b45309}
+    .activity-icon.delete{background:#fef2f2;color:#dc2626}
+    .activity-title{font-size:13px;font-weight:700;color:#1e293b;line-height:1.45}
+    .activity-meta{font-size:11px;color:#94a3b8;margin-top:3px}
+    .activity-change{
+      margin-top:8px;padding:8px 10px;border-radius:9px;background:#f8fafc;
+      border:1px solid #eef2f7;font-size:11px;color:#475569;word-break:break-word;
+    }
+    .activity-old{text-decoration:line-through;color:#94a3b8}
+    .activity-arrow{padding:0 5px;color:#94a3b8}
+    .activity-new{font-weight:700;color:#0f172a}
+    .activity-time{font-size:11px;color:#94a3b8;white-space:nowrap;padding-top:2px}
+    .activity-empty{padding:34px 10px;text-align:center;color:#94a3b8}
+    .activity-empty i{font-size:30px;display:block;margin-bottom:8px;color:#cbd5e1}
+    .activity-summary-link{font-size:12px;text-decoration:none;font-weight:700}
+    .activity-filter .btn{font-size:11px}
+    @media(max-width:767.98px){
+      .activity-item{grid-template-columns:38px minmax(0,1fr);gap:10px}
+      .activity-time{grid-column:2;white-space:normal;padding-top:0}
+    }
+
+  
+    /* Fitur verifikasi, kelengkapan, profil, dan sinkronisasi */
+    .ops-card{border:1px solid var(--border);border-radius:14px;background:#fff;height:100%}
+    .ops-card .ops-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#f1f5f9;color:#334155;font-size:18px}
+    .ops-value{font-size:24px;font-weight:850;line-height:1}.ops-label{font-size:11px;color:#64748b;margin-top:7px}
+    .completion-card{border:1px solid #dbeafe;background:#f8fbff;border-radius:13px;padding:14px 15px;margin-bottom:18px}
+    .completion-progress{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}.completion-bar{height:100%;background:#4169e1;border-radius:999px;transition:.2s}
+    .pending-field-note{font-size:10.5px;color:#92400e;margin-top:5px;display:flex;align-items:center;gap:5px}
+    .pending-field-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:10px;font-weight:750;margin-left:6px}
+    .request-change{padding:8px 10px;border:1px solid #eef2f7;border-radius:9px;background:#f8fafc;margin-top:6px;font-size:11px}
+    .request-change + .request-change{margin-top:5px}.request-old{color:#94a3b8;text-decoration:line-through}.request-new{font-weight:750;color:#0f172a}
+    .profile-menu{min-width:260px;border:1px solid var(--border);border-radius:14px;padding:8px;box-shadow:0 18px 45px rgba(15,23,42,.12)}
+    .profile-menu .dropdown-item{border-radius:9px;padding:9px 10px;font-size:12px}.profile-menu .profile-head{padding:10px 10px 8px;border-bottom:1px solid #eef2f7;margin-bottom:6px}
+    .sync-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.sync-metric{border:1px solid #e5e9f2;border-radius:11px;padding:11px;background:#fff}.sync-metric strong{font-size:18px;display:block}.sync-metric span{font-size:10.5px;color:#64748b}
+    .backup-box{border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc;font-size:11.5px;color:#475569}
+    .activity-toolbar{display:grid;grid-template-columns:minmax(180px,1fr) 150px 150px 150px auto;gap:8px;align-items:end}
+    .request-status{font-size:10px;font-weight:800;padding:4px 8px;border-radius:999px;display:inline-flex}.request-pending{background:#fff7ed;color:#9a3412}.request-approved{background:#ecfdf5;color:#047857}.request-rejected{background:#fef2f2;color:#b91c1c}.request-superseded{background:#f1f5f9;color:#64748b}
+    @media(max-width:991.98px){.sync-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.activity-toolbar{grid-template-columns:1fr 1fr}}
+    @media(max-width:575.98px){.sync-summary,.activity-toolbar{grid-template-columns:1fr}}
+
+  
+    /* Aksi tabel peserta didik yang lebih aman */
+    .student-name-action{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      max-width:100%;
+    }
+    .student-name-trigger{
+      appearance:none;
+      border:0;
+      background:transparent;
+      padding:2px 0;
+      margin:0;
+      color:#1e293b;
+      font:inherit;
+      font-weight:700;
+      text-align:left;
+      cursor:pointer;
+      line-height:1.35;
+    }
+    .student-name-trigger:hover{
+      color:var(--primary);
+      text-decoration:underline;
+      text-underline-offset:3px;
+    }
+    .student-row-selected td{
+      background:#f8faff !important;
+    }
+    #deleteStudentFormBtn{
+      margin-right:auto;
+    }
+
+  
+    /* Perapihan jarak kartu operasional dan badge sidebar */
+    .admin-ops-row{
+      margin-top:18px !important;
+    }
+    .side-link .badge{
+      align-self:center;
+      line-height:1;
+      transform:translateY(1px);
+    }
+
+  
+    /* Dialog konfirmasi aplikasi — menggantikan confirm/alert bawaan browser */
+    .app-confirm-modal .modal-content{
+      border:0;
+      border-radius:18px;
+      box-shadow:0 24px 70px rgba(15,23,42,.22);
+      overflow:hidden;
+    }
+    .app-confirm-modal .modal-body{
+      padding:24px 24px 18px;
+    }
+    .app-confirm-head{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+    }
+    .app-confirm-icon{
+      width:44px;height:44px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      flex:0 0 auto;font-size:20px;
+      background:#eef2ff;color:#4f46e5;
+    }
+    .app-confirm-modal.is-danger .app-confirm-icon{background:#fef2f2;color:#dc2626}
+    .app-confirm-modal.is-warning .app-confirm-icon{background:#fff7ed;color:#d97706}
+    .app-confirm-modal.is-success .app-confirm-icon{background:#ecfdf5;color:#16a34a}
+    .app-confirm-title{
+      font-size:16px;font-weight:800;color:#0f172a;margin:1px 0 5px;
+    }
+    .app-confirm-message{
+      font-size:13px;line-height:1.6;color:#64748b;white-space:pre-line;
+    }
+    .app-confirm-modal .modal-footer{
+      border-top:1px solid #eef2f7;
+      padding:14px 18px;
+      background:#fafbfc;
+    }
+    .app-confirm-modal .modal-footer .btn{
+      min-width:104px;border-radius:10px;font-weight:700;
+    }
+
+  
+    /* Rekap Jenis Kelamin — kompak, konsisten, dan tidak melebar keluar */
+    #view-gender{
+      max-width:100%;
+      overflow:hidden;
+    }
+    .gender-recap-block{
+      width:100%;
+      min-width:0;
+    }
+    .gender-recap-block + .gender-recap-block{
+      margin-top:16px;
+    }
+    .gender-recap-block .row{
+      --bs-gutter-x:14px;
+      --bs-gutter-y:14px;
+    }
+    .gender-recap-block [class*="col-"]{
+      min-width:0;
+    }
+    .gender-recap-card{
+      width:100%;
+      min-width:0;
+      overflow:hidden;
+      border-radius:13px;
+    }
+    .gender-recap-card .card-header{
+      min-height:44px;
+      padding:9px 13px;
+      display:flex;
+      align-items:center;
+      background:#fff;
+      border-bottom:1px solid #eef2f7;
+    }
+    .gender-recap-card .card-header strong{
+      font-size:12px;
+      line-height:1.35;
+      color:#334155;
+      font-weight:750;
+    }
+    .gender-recap-card .card-body{
+      min-width:0;
+      padding:10px 12px 8px;
+      overflow:hidden;
+    }
+    .gender-recap-card .table-responsive{
+      width:100%;
+      min-width:0;
+    }
+    .gender-recap-card .table{
+      width:100%;
+      margin-bottom:0;
+      table-layout:auto;
+    }
+    .gender-recap-card .table th{
+      padding:8px 9px;
+      white-space:nowrap;
+      font-size:10.5px;
+      color:#64748b;
+      font-weight:750;
+      vertical-align:middle;
+    }
+    .gender-recap-card .table td{
+      padding:7px 9px;
+      font-size:11px;
+      line-height:1.35;
+      vertical-align:middle;
+    }
+    .gender-recap-card tfoot td{
+      padding:8px 9px;
+      background:#f8fafc;
+      font-weight:800;
+    }
+    .gender-class-table-wrap{
+      overflow-x:auto;
+      overflow-y:hidden;
+    }
+    .gender-rombel-table-wrap{
+      max-height:430px;
+      overflow:auto;
+      scrollbar-width:thin;
+    }
+    .gender-chart-wrap{
+      width:100%;
+      min-width:0;
+      overflow:hidden;
+    }
+    .gender-chart-scroll{
+      width:100%;
+      max-height:430px;
+      overflow-y:auto;
+      overflow-x:hidden;
+      scrollbar-width:thin;
+    }
+    .gender-chart-class{
+      width:100%;
+      min-width:0;
+      height:230px;
+    }
+    .gender-chart-rombel{
+      width:100%;
+      min-width:0;
+    }
+    @media(max-width:1199.98px){
+      .gender-recap-card .card-header{
+        min-height:42px;
+      }
+      .gender-chart-class{
+        height:220px;
+      }
+      .gender-rombel-table-wrap,
+      .gender-chart-scroll{
+        max-height:390px;
+      }
+    }
+    @media(max-width:767.98px){
+      #view-gender{
+        overflow:visible;
+      }
+      .gender-recap-block + .gender-recap-block{
+        margin-top:14px;
+      }
+      .gender-recap-card .card-header strong{
+        font-size:11.5px;
+      }
+      .gender-recap-card .card-body{
+        padding:8px;
+      }
+      .gender-recap-card .table th,
+      .gender-recap-card .table td{
+        padding-left:7px;
+        padding-right:7px;
+      }
+      .gender-chart-class{
+        height:210px;
+      }
+      .gender-rombel-table-wrap,
+      .gender-chart-scroll{
+        max-height:350px;
+      }
+    }
+
+
+  
+    /* Tabel rekap terkunci di dalam box */
+    .gender-recap-card .table-responsive{
+      overflow-x:hidden;
+    }
+    .gender-recap-card .table{
+      width:100% !important;
+      max-width:100% !important;
+      table-layout:fixed;
+      border-collapse:separate;
+      border-spacing:0;
+      box-sizing:border-box;
+    }
+    .gender-recap-card .table th,
+    .gender-recap-card .table td{
+      box-sizing:border-box;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .gender-recap-card .table th:first-child,
+    .gender-recap-card .table td:first-child{
+      width:44px !important;
+      min-width:44px !important;
+      max-width:44px !important;
+      text-align:center;
+      padding-left:4px;
+      padding-right:4px;
+    }
+    .gender-recap-card .table th:not(:nth-child(2)),
+    .gender-recap-card .table td:not(:nth-child(2)){
+      text-align:center;
+    }
+    .gender-recap-card .table th:nth-child(2),
+    .gender-recap-card .table td:nth-child(2){
+      text-align:left;
+      white-space:nowrap;
+    }
+    .gender-class-table-wrap,
+    .gender-rombel-table-wrap{
+      width:100%;
+      max-width:100%;
+    }
+    .gender-class-table-wrap{
+      overflow-x:hidden;
+    }
+    .gender-rombel-table-wrap{
+      overflow-x:hidden;
+      overflow-y:auto;
+    }
+
+  
+    /* Jarak tabel dari garis box */
+    .gender-recap-card .table-responsive{
+      margin:10px 12px 12px;
+      width:auto !important;
+      max-width:none !important;
+      border:1px solid #e9edf3;
+      border-radius:10px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .gender-recap-card .table{
+      margin:0 !important;
+      border-radius:10px;
+    }
+    .gender-recap-card .table thead th{
+      border-top:0;
+    }
+    .gender-recap-card .table tr > *:first-child{
+      border-left:0;
+    }
+    .gender-recap-card .table tr > *:last-child{
+      border-right:0;
+    }
+    .gender-recap-card .table tbody tr:last-child td,
+    .gender-recap-card .table tfoot tr:last-child td{
+      border-bottom:0;
+    }
+    .gender-recap-card .table tfoot td{
+      border-top:1px solid #e9edf3;
+    }
+    .gender-rombel-table-wrap{
+      max-height:410px;
+    }
+    @media(max-width:767.98px){
+      .gender-recap-card .table-responsive{
+        margin:8px 8px 10px;
+      }
+    }
+
+  
+    /* Header responsif untuk tablet dan HP */
+    .topbar-left{
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .topbar-title-wrap{
+      min-width:0;
+    }
+    .topbar-actions{
+      flex:0 0 auto;
+    }
+    .topbar .page-title,
+    .topbar .page-subtitle{
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    @media(max-width:991.98px){
+      .topbar{
+        height:64px;
+        min-height:64px;
+        padding:8px 12px;
+        gap:10px;
+      }
+      .topbar-left{
+        gap:10px !important;
+      }
+      .mobile-toggle{
+        width:38px;
+        height:38px;
+        min-width:38px;
+        padding:0;
+        border-radius:11px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        font-size:20px;
+      }
+      .topbar .page-title{
+        font-size:17px;
+        line-height:1.15;
+      }
+      .topbar .page-subtitle{
+        font-size:10.5px;
+        margin-top:2px;
+      }
+      .topbar-actions{
+        gap:6px !important;
+      }
+      .notification-btn{
+        width:36px;
+        height:36px;
+        min-width:36px;
+        border-radius:10px;
+      }
+      .user-chip{
+        padding:0 !important;
+        width:36px;
+        height:36px;
+        min-width:36px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:50% !important;
+      }
+      .user-chip .user-avatar{
+        width:36px;
+        height:36px;
+        min-width:36px;
+        margin:0;
+      }
+      .user-chip .text-start,
+      .user-chip > .bi-chevron-down{
+        display:none !important;
+      }
+      .topbar .db-status{
+        display:none !important;
+      }
+      .profile-menu{
+        min-width:235px;
+        max-width:calc(100vw - 24px);
+      }
+    }
+
+    @media(max-width:575.98px){
+      .topbar{
+        height:60px;
+        min-height:60px;
+        padding:7px 10px;
+        gap:8px;
+      }
+      .topbar-left{
+        gap:8px !important;
+      }
+      .mobile-toggle{
+        width:36px;
+        height:36px;
+        min-width:36px;
+      }
+      .topbar .page-title{
+        font-size:15.5px;
+      }
+      .topbar .page-subtitle{
+        font-size:10px;
+      }
+      .notification-btn,
+      .user-chip,
+      .user-chip .user-avatar{
+        width:34px;
+        height:34px;
+        min-width:34px;
+      }
+      .notification-badge{
+        top:-4px;
+        right:-4px;
+      }
+      .content{
+        padding-top:12px;
+      }
+    }
+
+    @media(max-width:390px){
+      .topbar{
+        padding-left:8px;
+        padding-right:8px;
+      }
+      .topbar .page-subtitle{
+        display:none;
+      }
+      .topbar .page-title{
+        font-size:15px;
+      }
+      .topbar-actions{
+        gap:5px !important;
+      }
+    }
+
+  
+    /* Grafik rekap JK yang lebih proporsional */
+    .gender-recap-card .card-body{
+      display:block;
+    }
+    .gender-chart-wrap,
+    .gender-chart-scroll{
+      padding:2px 4px 0;
+      box-sizing:border-box;
+    }
+    .gender-chart-class{
+      height:210px;
+    }
+    .gender-chart-scroll{
+      max-height:410px;
+    }
+    @media(max-width:1199.98px){
+      .gender-chart-class{height:205px}
+      .gender-chart-scroll{max-height:380px}
+    }
+    @media(max-width:767.98px){
+      .gender-chart-wrap,
+      .gender-chart-scroll{
+        padding-left:0;
+        padding-right:0;
+      }
+      .gender-chart-class{height:200px}
+      .gender-chart-scroll{max-height:340px}
+    }
+
+  
+    /* Box grafik dibuat seimbang dengan box tabel */
+    .gender-recap-card .gender-chart-body{
+      padding:0 !important;
+      min-width:0;
+      overflow:hidden;
+    }
+    .gender-recap-card .gender-chart-wrap,
+    .gender-recap-card .gender-chart-scroll{
+      margin:10px 12px 12px;
+      width:auto !important;
+      max-width:none !important;
+      border:1px solid #e9edf3;
+      border-radius:10px;
+      background:#fff;
+      box-sizing:border-box;
+    }
+    .gender-recap-card .gender-chart-wrap{
+      padding:8px 8px 4px;
+      overflow:hidden;
+    }
+    .gender-recap-card .gender-chart-scroll{
+      padding:8px 8px 4px;
+      overflow-x:hidden;
+      overflow-y:auto;
+    }
+    .gender-recap-card .gender-chart-class,
+    .gender-recap-card .gender-chart-rombel{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+    }
+    @media(max-width:767.98px){
+      .gender-recap-card .gender-chart-wrap,
+      .gender-recap-card .gender-chart-scroll{
+        margin:8px 8px 10px;
+        padding:6px 5px 3px;
+      }
+    }
+
+  
+    /* Box tabel standar untuk seluruh aplikasi */
+    .app-table-box{
+      margin:10px 12px 12px;
+      width:auto !important;
+      max-width:none !important;
+      border:1px solid #e7ecf2;
+      border-radius:10px;
+      background:#fff;
+      overflow:auto;
+      scrollbar-width:thin;
+      box-sizing:border-box;
+    }
+    .app-table-box > table{
+      margin:0 !important;
+      min-width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+    }
+    .app-table-box > table thead th{
+      border-top:0;
+      background:#fff;
+    }
+    .app-table-box > table tr > *:first-child{
+      border-left:0;
+    }
+    .app-table-box > table tr > *:last-child{
+      border-right:0;
+    }
+    .app-table-box > table tbody tr:last-child td,
+    .app-table-box > table tfoot tr:last-child td{
+      border-bottom:0;
+    }
+    .app-table-box > table th,
+    .app-table-box > table td{
+      vertical-align:middle;
+    }
+    .student-table-box{
+      max-width:calc(100% - 24px) !important;
+      overflow-x:auto;
+    }
+    .preview-table-box{
+      max-height:560px;
+      overflow:auto;
+    }
+    @media(max-width:767.98px){
+      .app-table-box{
+        margin:8px 8px 10px;
+      }
+      .student-table-box{
+        max-width:calc(100% - 16px) !important;
+      }
+    }
+
+  
+    /* Pastikan container ApexCharts mempunyai ukuran nyata */
+    .gender-recap-card .gender-chart-wrap{
+      min-height:225px;
+    }
+    .gender-recap-card .gender-chart-scroll{
+      min-height:300px;
+    }
+    #genderClassChart,
+    #genderRombelChart{
+      display:block;
+      position:relative;
+      width:100%;
+    }
+    #genderClassChart .apexcharts-canvas,
+    #genderRombelChart .apexcharts-canvas{
+      max-width:100% !important;
+      margin:0 auto;
+    }
+
+  
+    /* Grafik komposisi pada Beranda */
+    .dashboard-chart-body{
+      padding:0 !important;
+      min-width:0;
+      overflow:hidden;
+    }
+    .dashboard-chart-frame{
+      margin:10px 12px 12px;
+      padding:8px 8px 4px;
+      border:1px solid #e7ecf2;
+      border-radius:10px;
+      background:#fff;
+      min-width:0;
+      overflow:hidden;
+      box-sizing:border-box;
+      min-height:275px;
+    }
+    #dashboardGenderChart,
+    #dashboardReligionChart{
+      width:100%;
+      min-width:0;
+      height:260px;
+      position:relative;
+    }
+    #dashboardGenderChart .apexcharts-canvas,
+    #dashboardReligionChart .apexcharts-canvas{
+      max-width:100% !important;
+      margin:0 auto;
+    }
+    @media(max-width:767.98px){
+      .dashboard-chart-frame{
+        margin:8px 8px 10px;
+        padding:6px 5px 3px;
+        min-height:250px;
+      }
+      #dashboardGenderChart,
+      #dashboardReligionChart{
+        height:235px;
+      }
+    }
+
+  
+    /* Ikon edit menggantikan nomor baris saat nama dipilih */
+    .student-number-cell{
+      width:46px;
+      min-width:46px;
+      max-width:46px;
+      text-align:center;
+      vertical-align:middle !important;
+    }
+    .student-number-edit{
+      width:28px;
+      height:28px;
+      margin:0 auto;
+      padding:0;
+      border-radius:8px;
+      border:1px solid #c7d2fe;
+      background:#eef2ff;
+      color:#4f46e5;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition:.16s ease;
+    }
+    .student-number-edit:hover,
+    .student-number-edit:focus{
+      background:#4f46e5;
+      color:#fff;
+      border-color:#4f46e5;
+      outline:0;
+      box-shadow:0 0 0 3px rgba(79,70,229,.10);
+    }
+
+  
+    /* Form peserta didik — gaya datar menyerupai formulir Dapodik */
+    .student-form-page{
+      width:100%;
+      background:#fff;
+      border:0;
+      border-radius:0;
+      box-shadow:none;
+    }
+    .student-form-page > form{
+      width:100%;
+    }
+    .student-form-topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:4px 2px 14px;
+      margin-bottom:4px;
+      border-bottom:1px solid #e7edf3;
+    }
+    .student-form-heading{
+      min-width:0;
+    }
+    .student-form-heading h5{
+      margin:0;
+      font-size:18px;
+      font-weight:800;
+      color:#1f2937;
+    }
+    .student-form-caption{
+      margin-top:3px;
+      font-size:11px;
+      color:#94a3b8;
+    }
+    .student-back-btn{
+      border:0;
+      background:transparent;
+      color:#4169e1;
+      font-size:12px;
+      font-weight:700;
+      padding:7px 0 7px 10px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      flex:0 0 auto;
+    }
+    .student-back-btn:hover{
+      color:#2447bd;
+    }
+    .student-form-main{
+      padding:14px 2px 6px;
+    }
+    .student-form-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:16px 2px 4px;
+      margin-top:16px;
+      border-top:1px solid #e7edf3;
+    }
+    .student-form-actions-right{
+      display:flex;
+      gap:8px;
+      margin-left:auto;
+    }
+
+    #studentFormPanel .completion-card-slim{
+      margin:0 0 18px;
+      padding:9px 12px 8px;
+      border:1px solid #e7edf3;
+      border-radius:7px;
+      background:#fbfcfe;
+      box-shadow:none;
+    }
+    #studentFormPanel .completion-inline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:7px;
+    }
+    #studentFormPanel .completion-inline-text{
+      min-width:0;
+      display:flex;
+      align-items:baseline;
+      gap:9px;
+      flex-wrap:wrap;
+    }
+    #studentFormPanel .completion-inline-text strong{
+      font-size:11px;
+      color:#475569;
+    }
+    #studentFormPanel .completion-inline-text span{
+      font-size:10.5px;
+      color:#94a3b8;
+    }
+    #studentFormPanel .completion-value{
+      font-size:12px;
+      color:#4169e1;
+    }
+
+    #studentFormPanel .form-section-title{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin:24px 0 12px;
+      padding:0;
+      border:0;
+      background:transparent;
+      color:#2f91c8;
+      font-size:15px;
+      font-weight:800;
+      line-height:1.2;
+    }
+    #studentFormPanel .form-section-title::after{
+      content:"";
+      height:1px;
+      flex:1 1 auto;
+      background:#e5edf3;
+    }
+    #studentFormPanel .form-section-title:first-child{
+      margin-top:2px;
+    }
+
+    .student-form-grid .row{
+      --bs-gutter-x:14px;
+      --bs-gutter-y:12px;
+    }
+    .form-field-wrap{
+      padding:0;
+      border:0;
+      background:transparent;
+      box-shadow:none;
+    }
+    .form-field-wrap:focus-within{
+      border:0;
+      background:transparent;
+      box-shadow:none;
+    }
+    .form-field-wrap .form-label{
+      margin-bottom:5px;
+      font-size:11.5px;
+      font-weight:700;
+      color:#4b5563;
+      line-height:1.25;
+    }
+    .form-field-wrap .form-control,
+    .form-field-wrap .form-select{
+      min-height:38px;
+      padding:7px 10px;
+      border:1px solid #d4dce6;
+      border-radius:5px;
+      background:#fff;
+      font-size:12.5px;
+      box-shadow:inset 0 1px 2px rgba(15,23,42,.025);
+    }
+    .form-field-wrap textarea.form-control{
+      min-height:70px;
+    }
+    .form-field-wrap .form-control:focus,
+    .form-field-wrap .form-select:focus{
+      border-color:#6fa5d4;
+      box-shadow:0 0 0 .14rem rgba(59,130,246,.08);
+    }
+
+    @media(max-width:767.98px){
+      .student-form-topbar{
+        align-items:flex-start;
+        padding-bottom:11px;
+      }
+      .student-form-heading h5{
+        font-size:16px;
+      }
+      .student-back-btn span{
+        display:none;
+      }
+      .student-back-btn{
+        width:34px;
+        height:34px;
+        padding:0;
+        justify-content:center;
+      }
+      .student-form-main{
+        padding-top:12px;
+      }
+      .student-form-actions{
+        align-items:stretch;
+        flex-direction:column-reverse;
+      }
+      .student-form-actions-right{
+        width:100%;
+        margin-left:0;
+      }
+      .student-form-actions-right .btn{
+        flex:1 1 0;
+      }
+      #deleteStudentFormBtn{
+        width:100%;
+      }
+      #studentFormPanel .form-section-title{
+        margin-top:20px;
+        font-size:14px;
+      }
+    }
+
+  
+    /* Field Data Bank hanya dapat berasal dari Dapodik */
+    #studentFormPanel .system-readonly{
+      background:#f1f3f5 !important;
+      color:#6b7280 !important;
+      border-color:#d7dce2 !important;
+      cursor:not-allowed !important;
+      box-shadow:none !important;
+    }
+    #studentFormPanel .system-readonly:focus{
+      border-color:#d7dce2 !important;
+      box-shadow:none !important;
+    }
+
+
+  
+    /* Penanda visual data utama yang belum lengkap */
+    #studentFormPanel .form-field-wrap.field-missing .form-label{
+      color:#b42318 !important;
+    }
+    #studentFormPanel .form-field-wrap.field-missing .form-control,
+    #studentFormPanel .form-field-wrap.field-missing .form-select,
+    #studentFormPanel .form-field-wrap.field-missing textarea{
+      border-color:#dc2626 !important;
+      box-shadow:0 0 0 1px rgba(220,38,38,.08) !important;
+    }
+    #studentFormPanel .form-field-wrap.field-missing .form-control:focus,
+    #studentFormPanel .form-field-wrap.field-missing .form-select:focus,
+    #studentFormPanel .form-field-wrap.field-missing textarea:focus{
+      border-color:#dc2626 !important;
+      box-shadow:0 0 0 .16rem rgba(220,38,38,.10) !important;
+    }
+    #studentFormPanel .completion-card.has-missing-data{
+      border-color:#fecaca;
+      background:#fffafa;
+    }
+    #studentFormPanel .completion-card.has-missing-data .completion-value{
+      color:#b42318;
+    }
+
+  
+    /* Tabel rombel memakai scroll agar halaman tetap ringkas */
+    .gender-rombel-table-wrap{
+      max-height:430px !important;
+      height:auto !important;
+      overflow-x:auto !important;
+      overflow-y:auto !important;
+      overscroll-behavior:contain;
+      scrollbar-gutter:stable;
+    }
+
+    .gender-rombel-table-wrap.app-table-box{
+      max-height:430px !important;
+      overflow-x:auto !important;
+      overflow-y:auto !important;
+    }
+
+    .gender-rombel-table-wrap table{
+      margin-bottom:0 !important;
+    }
+
+    .gender-rombel-table-wrap thead th{
+      position:sticky;
+      top:0;
+      z-index:4;
+      background:var(--bs-body-bg, #fff);
+      box-shadow:0 1px 0 rgba(15,23,42,.10);
+    }
+
+    @media(max-width:767.98px){
+      .gender-rombel-table-wrap,
+      .gender-rombel-table-wrap.app-table-box{
+        max-height:380px !important;
+        overflow-y:auto !important;
+      }
+    }
+
+  
+    /* UI v47: role siswa hanya memiliki Data Saya, tanpa panel daftar */
+    #view-students.student-readonly #studentListPanel{
+      display:none !important;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-shell">
+    <section class="login-brand-panel">
+      <div class="login-brand-content">
+        <div class="school-mark"><i class="bi bi-mortarboard-fill"></i></div>
+        <div class="login-eyebrow">UPT SPF SMP NEGERI 3 MAKASSAR</div>
+        <h1 class="login-brand-title">Portal Data Peserta Didik</h1>
+        <p class="login-brand-desc">Akses informasi peserta didik sesuai hak akses akun Anda.</p>
+        <div class="login-feature-list">
+          <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-shield-check"></i></span><span>Hak akses sesuai peran</span></div>
+          <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-file-earmark-spreadsheet"></i></span><span>Data bersumber dari Dapodik</span></div>
+          <div class="login-feature"><span class="login-feature-icon"><i class="bi bi-bar-chart-line"></i></span><span>Informasi tersusun dengan rapi</span></div>
+        </div>
+      </div>
+      <div class="login-brand-footer"><i class="bi bi-building"></i><span>UPT SPF SMP NEGERI 3 MAKASSAR</span></div>
+    </section>
+
+    <section class="login-form-panel">
+      <div class="login-mobile-brand">
+        <div class="school-mark"><i class="bi bi-mortarboard-fill"></i></div>
+        <div class="login-mobile-school">UPT SPF SMP NEGERI 3 MAKASSAR<br><span class="fw-normal text-secondary">Portal Data Peserta Didik</span></div>
+      </div>
+
+      <div class="login-role-pill"><i class="bi bi-person-lock"></i> Akses Akun</div>
+      <h2 class="login-title">Masuk</h2>
+      <p class="login-sub">Gunakan akun yang telah ditetapkan untuk mengakses sistem.</p>
+
+      <div class="login-alert danger" id="loginAlert"><i class="bi bi-exclamation-circle-fill mt-1"></i><span id="loginAlertText"></span></div>
+
+      <div class="login-body">
+        <form id="loginForm" novalidate>
+          <div class="mb-3">
+            <label class="login-label" for="loginUsername">Username atau NISN</label>
+            <div class="login-field">
+              <i class="bi bi-person login-field-icon"></i>
+              <input class="form-control login-input" id="loginUsername" autocomplete="username" required placeholder="Masukkan Username atau NISN">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="login-label" for="loginPassword">Kata Sandi</label>
+            <div class="login-field">
+              <i class="bi bi-key login-field-icon"></i>
+              <input type="password" class="form-control login-input login-password-input" id="loginPassword" autocomplete="current-password" required placeholder="Masukkan kata sandi">
+              <button class="password-toggle" type="button" id="toggleLoginPassword" aria-label="Tampilkan kata sandi"><i class="bi bi-eye"></i></button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary w-100 login-submit" id="loginSubmitBtn" type="submit">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Masuk
+          </button>
+        </form>
+
+        <div class="login-help">
+          <div class="d-flex gap-2"><i class="bi bi-info-circle text-primary mt-1"></i><div><strong>Akses Siswa</strong><br>Gunakan <strong>NISN</strong> sebagai username dan <strong>tanggal lahir dengan format DDMMYYYY</strong> sebagai kata sandi.</div></div>
+        </div>
+        <div class="login-api-row">
+          <div class="login-api-status" id="loginApiStatus"><span class="login-api-dot"></span><span id="loginApiText">Menyiapkan koneksi...</span></div>
+          <div class="login-version">v28</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="loading-layer" id="loadingLayer">
+  <div class="loading-box">
+    <div class="spinner-border spinner-border-sm text-primary"></div>
+    <span id="loadingText">Memproses permintaan...</span>
+  </div>
+</div>
+
+
+  <div class="modal fade app-confirm-modal" id="appConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body">
+          <div class="app-confirm-head">
+            <div class="app-confirm-icon" id="appConfirmIcon"><i class="bi bi-question-lg"></i></div>
+            <div>
+              <div class="app-confirm-title" id="appConfirmTitle">Konfirmasi</div>
+              <div class="app-confirm-message" id="appConfirmMessage"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" id="appConfirmCancel">Batal</button>
+          <button type="button" class="btn btn-primary" id="appConfirmOk">Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form id="passwordForm" novalidate><div class="modal-header"><h5 class="modal-title">Ganti Kata Sandi Admin</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Kata Sandi Saat Ini</label><input type="password" class="form-control" id="oldPassword" required></div><div class="mb-3"><label class="form-label">Kata Sandi Baru</label><input type="password" class="form-control" id="newPassword" minlength="8" required><div class="small-note mt-1">Minimal 8 karakter.</div></div><div><label class="form-label">Ulangi Kata Sandi Baru</label><input type="password" class="form-control" id="confirmPassword" minlength="8" required></div></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary">Simpan Kata Sandi</button></div></form></div></div></div>
+
+<div class="app-shell d-none" id="appShell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><i class="bi bi-people-fill"></i></div>
+      <span>Data Peserta Didik</span>
+    </div>
+
+    <div class="school-name">
+      <strong>UPT SPF SMP NEGERI 3 MAKASSAR</strong><br>
+      Portal Data Peserta Didik
+    </div>
+
+    <div class="nav-label">Menu Utama</div>
+    <button class="side-link active admin-only" data-view="dashboard">
+      <i class="bi bi-grid-1x2"></i><span>Beranda</span>
+    </button>
+    <button class="side-link" data-view="students">
+      <i class="bi bi-person-lines-fill"></i><span>Data Peserta Didik</span>
+    </button>
+    <button class="side-link admin-only" data-view="import">
+      <i class="bi bi-file-earmark-spreadsheet"></i><span>Impor Dapodik</span>
+    </button>
+    <button class="side-link admin-only" data-view="requests">
+      <i class="bi bi-inbox-check"></i><span>Pengajuan Data</span>
+      <span class="badge rounded-pill text-bg-warning ms-auto d-none" id="requestMenuBadge">0</span>
+    </button>
+    <button class="side-link admin-only" data-view="activities">
+      <i class="bi bi-clock-history"></i><span>Aktivitas</span>
+      <span class="badge rounded-pill text-bg-danger ms-auto d-none" id="activityMenuBadge">0</span>
+    </button>
+    <button class="side-link admin-only" data-view="conflicts">
+      <i class="bi bi-exclamation-diamond"></i><span>Perbedaan Data</span>
+      <span class="badge rounded-pill text-bg-warning ms-auto d-none" id="conflictBadge">0</span>
+    </button>
+
+    <div class="nav-label admin-only">Rekap Data</div>
+    <button class="side-link admin-only" data-view="gender">
+      <i class="bi bi-gender-ambiguous"></i><span>Jenis Kelamin</span>
+    </button>
+    <button class="side-link admin-only" data-view="religion">
+      <i class="bi bi-pie-chart"></i><span>Agama</span>
+    </button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left d-flex align-items-center gap-3">
+        <button class="btn btn-light mobile-toggle" id="mobileToggle" type="button" aria-label="Buka menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="topbar-title-wrap">
+          <h1 class="page-title" id="pageTitle">Beranda</h1>
+          <div class="page-subtitle" id="pageSubtitle">Ikhtisar data peserta didik</div>
+        </div>
+      </div>
+      <div class="topbar-actions d-flex align-items-center gap-2">
+        <button class="notification-btn admin-only" id="activityBell" type="button" title="Lihat aktivitas terbaru">
+          <i class="bi bi-bell"></i>
+          <span class="notification-badge d-none" id="activityBellBadge">0</span>
+        </button>
+        <div class="db-status">
+          <span class="db-dot"></span>
+          <span>Database</span>
+        </div>
+        <div class="dropdown">
+          <button class="user-chip border-0 bg-transparent" id="userChip" data-bs-toggle="dropdown" aria-expanded="false" type="button">
+            <span class="user-avatar" id="userAvatar">U</span>
+            <span class="text-start"><strong id="userName">Akun</strong><br><span id="userRole" class="text-muted"></span></span>
+            <i class="bi bi-chevron-down small text-muted ms-1"></i>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end profile-menu">
+            <div class="profile-head"><strong id="profileName">Akun</strong><div class="small-note" id="profileMeta">-</div></div>
+            <button class="dropdown-item admin-only" id="changePasswordBtn" type="button"><i class="bi bi-key me-2"></i>Ganti Kata Sandi Admin</button>
+            <button class="dropdown-item text-danger" id="logoutBtn" type="button"><i class="bi bi-box-arrow-right me-2"></i>Keluar</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <section class="view active" id="view-dashboard">
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-xl-3">
+            <div class="card stat-card h-100">
+              <div class="card-body d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value" id="statTotal">0</div>
+                  <div class="stat-label">Total Peserta Didik</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-people"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-xl-3">
+            <div class="card stat-card h-100">
+              <div class="card-body d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value" id="statL">0</div>
+                  <div class="stat-label">Laki-laki</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-gender-male"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-xl-3">
+            <div class="card stat-card h-100">
+              <div class="card-body d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value" id="statP">0</div>
+                  <div class="stat-label">Perempuan</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-gender-female"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-xl-3">
+            <div class="card stat-card h-100">
+              <div class="card-body d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-value" id="statRombel">0</div>
+                  <div class="stat-label">Rombel</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-xl-7">
+            <div class="card h-100">
+              <div class="card-header">
+                <strong>Komposisi Jenis Kelamin per Kelas</strong>
+              </div>
+              <div class="card-body dashboard-chart-body">
+                <div class="dashboard-chart-frame"><div id="dashboardGenderChart" class="chart-box"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-5">
+            <div class="card h-100">
+              <div class="card-header">
+                <strong>Komposisi Agama</strong>
+              </div>
+              <div class="card-body dashboard-chart-body">
+                <div class="dashboard-chart-frame"><div id="dashboardReligionChart" class="chart-box"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3 admin-only admin-ops-row">
+          <div class="col-6 col-xl-3"><div class="ops-card p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="ops-value" id="statPendingRequests">0</div><div class="ops-label">Pengajuan Menunggu</div></div><div class="ops-icon"><i class="bi bi-inbox-check"></i></div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="ops-card p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="ops-value" id="statConflicts">0</div><div class="ops-label">Perbedaan Data</div></div><div class="ops-icon"><i class="bi bi-exclamation-diamond"></i></div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="ops-card p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="ops-value" id="statIncomplete">0</div><div class="ops-label">Data Belum Lengkap</div></div><div class="ops-icon"><i class="bi bi-clipboard2-pulse"></i></div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="ops-card p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="ops-value" id="statTodayActivities">0</div><div class="ops-label">Aktivitas Hari Ini</div></div><div class="ops-icon"><i class="bi bi-clock-history"></i></div></div></div></div>
+        </div>
+
+        <div class="card mt-3 admin-only">
+          <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <div>
+              <strong>Aktivitas Terbaru</strong>
+              <div class="small-note">Perubahan data terbaru pada sistem</div>
+            </div>
+            <button class="btn btn-light btn-sm" id="dashboardActivityMore" type="button">
+              Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+          <div class="card-body py-1">
+            <div class="activity-list" id="dashboardActivityList">
+              <div class="activity-empty"><i class="bi bi-clock-history"></i>Belum ada aktivitas.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PENGAJUAN PERUBAHAN -->
+      <section class="view admin-only" id="view-requests">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div><strong>Pengajuan Perubahan Data</strong><div class="small-note">Tinjau perubahan yang dikirim peserta didik sebelum diterapkan ke data utama.</div></div>
+            <div class="d-flex gap-2"><select class="form-select form-select-sm" id="requestStatusFilter"><option value="PENDING">Menunggu</option><option value="">Semua Status</option><option value="APPROVED">Disetujui</option><option value="REJECTED">Ditolak</option><option value="SUPERSEDED">Digantikan</option></select><button class="btn btn-outline-secondary btn-sm" id="refreshRequests" type="button"><i class="bi bi-arrow-clockwise me-1"></i>Muat Ulang</button></div>
+          </div>
+          <div class="table-responsive app-table-box">
+            <table class="table table-hover align-middle"><thead><tr><th>Waktu</th><th>Peserta Didik</th><th>Perubahan</th><th>Status</th><th class="text-end">Tindakan</th></tr></thead><tbody id="requestTableBody"><tr><td colspan="5" class="empty-state">Belum ada pengajuan.</td></tr></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- AKTIVITAS ADMIN -->
+      <section class="view admin-only" id="view-activities">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <strong>Riwayat Aktivitas</strong>
+              <div class="small-note">Catatan perubahan data peserta didik</div>
+            </div>
+            <div class="w-100 mt-2 activity-toolbar">
+              <div><label class="form-label mb-1">Cari</label><input class="form-control form-control-sm" id="activitySearch" placeholder="Nama, NISN, atau data..."></div>
+              <div><label class="form-label mb-1">Pelaku</label><select id="activityActorFilter" class="form-select form-select-sm"><option value="">Semua</option><option value="SISWA">Siswa</option><option value="ADMIN">Admin</option><option value="SYSTEM">Sistem / Dapodik</option></select></div>
+              <div><label class="form-label mb-1">Dari</label><input type="date" class="form-control form-control-sm" id="activityDateFrom"></div>
+              <div><label class="form-label mb-1">Sampai</label><input type="date" class="form-control form-control-sm" id="activityDateTo"></div>
+              <button class="btn btn-outline-secondary btn-sm" id="refreshActivities" type="button"><i class="bi bi-arrow-clockwise me-1"></i>Muat Ulang</button>
+            </div>
+          </div>
+          <div class="card-body py-1">
+            <div class="activity-list" id="activityList">
+              <div class="activity-empty"><i class="bi bi-clock-history"></i>Belum ada aktivitas.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DATA SISWA -->
+      <section class="view" id="view-students">
+
+        <div id="studentFormPanel" class="student-form-page d-none">
+          <form id="studentForm" novalidate>
+            <div class="student-form-topbar">
+              <div class="student-form-heading">
+                <h5 id="studentFormTitle">Tambah Peserta Didik</h5>
+                <div class="student-form-caption">Informasi peserta didik</div>
+              </div>
+              <button type="button" class="student-back-btn" id="backStudentForm">
+                <i class="bi bi-arrow-left"></i><span>Kembali ke Daftar</span>
+              </button>
+            </div>
+
+            <div class="student-form-main">
+              <input type="hidden" id="f-id">
+
+              <div class="completion-card completion-card-slim" id="completionCard">
+                <div class="completion-inline">
+                  <div class="completion-inline-text">
+                    <strong>Kelengkapan Data</strong>
+                    <span id="completionText">Memeriksa data...</span>
+                  </div>
+                  <strong class="completion-value" id="completionValue">0%</strong>
+                </div>
+                <div class="completion-progress">
+                  <div class="completion-bar" id="completionBar" style="width:0%"></div>
+                </div>
+              </div>
+
+              <div id="studentFormFields" class="student-form-grid"></div>
+            </div>
+
+            <div class="student-form-actions">
+              <button type="button" class="btn btn-outline-danger d-none" id="deleteStudentFormBtn">
+                <i class="bi bi-trash3 me-1"></i>Hapus Peserta Didik
+              </button>
+              <div class="student-form-actions-right">
+                <button type="button" class="btn btn-light" id="cancelStudentForm">Batal</button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-floppy me-1"></i>Simpan Data
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" id="studentListPanel">
+          <div class="card-header">
+            <div class="d-flex justify-content-between gap-2 flex-wrap align-items-center">
+              <div>
+                <strong>Data Peserta Didik</strong>
+                <div class="small-note">Lihat dan kelola informasi peserta didik.</div>
+              </div>
+              <div class="toolbar">
+                <button class="btn btn-outline-secondary btn-sm" id="toggleFullTableBtn">
+                  <i class="bi bi-layout-three-columns me-1"></i>Semua Kolom
+                </button>
+                <button class="btn btn-outline-success btn-sm" id="exportBtn">
+                  <i class="bi bi-file-earmark-excel me-1"></i>Ekspor Excel
+                </button>
+                <button class="btn btn-primary btn-sm" id="addStudentBtn">
+                  <i class="bi bi-plus-lg me-1"></i>Tambah Data
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body border-bottom">
+            <div class="row g-2">
+              <div class="col-lg-5">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                  <input id="searchInput" class="form-control" placeholder="Cari nama, NISN, NIK, atau rombel...">
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <select id="classFilter" class="form-select form-select-sm">
+                  <option value="">Semua Kelas</option>
+                </select>
+              </div>
+              <div class="col-6 col-lg-2">
+                <select id="genderFilter" class="form-select form-select-sm">
+                  <option value="">Semua Jenis Kelamin</option>
+                  <option value="L">Laki-laki</option>
+                  <option value="P">Perempuan</option>
+                </select>
+              </div>
+              <div class="col-lg-2">
+                <select id="pageSize" class="form-select form-select-sm">
+                  <option value="25">25 per halaman</option>
+                  <option value="50">50 per halaman</option>
+                  <option value="100">100 per halaman</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive app-table-box student-table-box">
+            <table class="table table-hover table-sm">
+              <thead id="studentTableHead"></thead>
+              <tbody id="studentTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="card-footer bg-white">
+            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+              <div class="small-note" id="tableInfo">0 peserta didik</div>
+              <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- IMPORT -->
+      <section class="view" id="view-import">
+        <div class="row g-3">
+          <div class="col-xl-5">
+            <div class="card">
+              <div class="card-header">
+                <strong>Impor Data Dapodik</strong>
+              </div>
+              <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                  <i class="bi bi-file-earmark-spreadsheet fs-1 text-success"></i>
+                  <div class="fw-bold mt-2">Pilih atau tarik file Excel Dapodik ke area ini</div>
+                  <div class="small-note mt-1">Format file: .xlsx atau .xls</div>
+                  <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
+                </div>
+
+                <div class="mt-3">
+                  <label class="form-label">Metode Sinkronisasi</label>
+                  <select class="form-select" id="importMode" disabled>
+                    <option value="smart">Sinkronisasi Cerdas</option>
+                  </select>
+                  <div class="small-note mt-1">
+                    Membandingkan data Dapodik sebelumnya, data pada aplikasi, dan data Dapodik terbaru. Perubahan yang berbeda akan ditandai untuk ditinjau.
+                  </div>
+                  <div class="alert alert-light border mt-3 mb-0 py-2 small">
+                    <i class="bi bi-info-circle me-1"></i> File <strong>Daftar Peserta Didik</strong> hasil unduhan Dapodik dapat digunakan langsung, termasuk header bertingkat data ayah, ibu, dan wali.
+                  </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-3">
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" id="templateBtn"><i class="bi bi-download me-1"></i>Unduh Template</button>
+                    <button class="btn btn-outline-secondary flex-grow-1" id="previewImportBtn" disabled><i class="bi bi-search me-1"></i>Periksa Perubahan</button>
+                  </div>
+                  <button class="btn btn-success" id="importBtn" disabled><i class="bi bi-check2-circle me-1"></i>Terapkan Sinkronisasi</button>
+                </div>
+                <div class="mt-3 d-none" id="syncPreviewPanel">
+                  <div class="fw-bold mb-2">Hasil Pemeriksaan</div>
+                  <div class="sync-summary">
+                    <div class="sync-metric"><strong id="pvNew">0</strong><span>Siswa Baru</span></div>
+                    <div class="sync-metric"><strong id="pvChanged">0</strong><span>Perubahan Dapodik</span></div>
+                    <div class="sync-metric"><strong id="pvPreserved">0</strong><span>Edit Dipertahankan</span></div>
+                    <div class="sync-metric"><strong id="pvConflict">0</strong><span>Potensi Perbedaan</span></div>
+                    <div class="sync-metric"><strong id="pvUnchanged">0</strong><span>Tidak Berubah</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mt-3 admin-only">
+              <div class="card-header"><strong>Cadangan Sebelum Sinkronisasi</strong></div>
+              <div class="card-body">
+                <div class="backup-box" id="backupInfo">Belum ada cadangan sinkronisasi.</div>
+                <button class="btn btn-outline-danger btn-sm mt-2" id="restoreBackupBtn" type="button" disabled><i class="bi bi-arrow-counterclockwise me-1"></i>Pulihkan Cadangan Terakhir</button>
+              </div>
+            </div>
+
+            <div class="card mt-3">
+              <div class="card-body">
+                <div class="fw-bold mb-2">Kolom yang Didukung</div>
+                <div class="small-note">
+                  Format lengkap mengikuti Excel: identitas, alamat, kontak, KPS/KIP/PIP, data Ayah/Ibu/Wali, rombel, dokumen, bank, kebutuhan khusus, koordinat, serta data periodik.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-7">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between">
+                <strong>Pratinjau Data</strong>
+                <span class="badge text-bg-light" id="previewCount">0 baris</span>
+              </div>
+              <div class="preview-wrap app-table-box preview-table-box">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>No</th><th>NISN</th><th>Nama</th><th>JK</th><th>Agama</th><th>Kelas</th><th>Rombel</th>
+                    </tr>
+                  </thead>
+                  <tbody id="previewBody">
+                    <tr><td colspan="7" class="empty-state">Belum ada file yang dipilih.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KONFLIK SINKRONISASI -->
+      <section class="view" id="view-conflicts">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <div><strong>Perbedaan Data</strong><div class="small-note">Ditampilkan ketika nilai pada aplikasi dan Dapodik berubah pada data yang sama.</div></div>
+            <button class="btn btn-outline-primary btn-sm" id="refreshConflictsBtn"><i class="bi bi-arrow-clockwise me-1"></i>Segarkan</button>
+          </div>
+          <div class="card-body border-bottom"><div class="alert alert-warning mb-0 small"><i class="bi bi-shield-exclamation me-1"></i> Nilai pada aplikasi tetap digunakan sampai Admin menentukan data yang akan dipakai.</div></div>
+          <div class="table-responsive app-table-box">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead><tr><th>Peserta Didik</th><th>Data</th><th>Dapodik Sebelumnya</th><th>Nilai di Aplikasi</th><th>Dapodik Terbaru</th><th class="text-end">Tindakan</th></tr></thead>
+              <tbody id="conflictTableBody"><tr><td colspan="6" class="empty-state">Belum ada perbedaan data.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REKAP JK -->
+      <section class="view" id="view-gender">
+
+        <div class="gender-recap-block">
+          <div class="row g-3">
+            <div class="col-xl-6">
+              <div class="card h-100 gender-recap-card">
+                <div class="card-header">
+                  <strong>Tabel Kelas Berdasarkan Jenis Kelamin</strong>
+                </div>
+                <div class="table-responsive gender-class-table-wrap app-table-box">
+                  <table class="table table-sm table-striped align-middle">
+                    <colgroup>
+                      <col style="width:44px">
+                      <col style="width:30%">
+                      <col style="width:23%">
+                      <col style="width:23%">
+                      <col style="width:24%">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Kelas</th>
+                        <th class="text-center">Laki-laki</th>
+                        <th class="text-center">Perempuan</th>
+                        <th class="text-center">Jumlah</th>
+                      </tr>
+                    </thead>
+                    <tbody id="genderClassBody"></tbody>
+                    <tfoot id="genderClassFoot"></tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-xl-6">
+              <div class="card h-100 gender-recap-card">
+                <div class="card-header">
+                  <strong>Grafik Kelas Berdasarkan Jenis Kelamin</strong>
+                </div>
+                <div class="card-body gender-chart-body">
+                  <div class="gender-chart-wrap"><div id="genderClassChart" class="gender-chart-class"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gender-recap-block">
+          <div class="row g-3">
+            <div class="col-xl-6">
+              <div class="card h-100 gender-recap-card">
+                <div class="card-header">
+                  <strong>Tabel Rombel Berdasarkan Jenis Kelamin</strong>
+                </div>
+                <div class="table-responsive gender-rombel-table-wrap app-table-box">
+                  <table class="table table-sm table-striped align-middle">
+                    <colgroup>
+                      <col style="width:44px">
+                      <col style="width:34%">
+                      <col style="width:22%">
+                      <col style="width:22%">
+                      <col style="width:22%">
+                    </colgroup>
+                    <thead class="sticky-top bg-white">
+                      <tr>
+                        <th>No</th>
+                        <th>Rombel</th>
+                        <th class="text-center">Laki-laki</th>
+                        <th class="text-center">Perempuan</th>
+                        <th class="text-center">Jumlah</th>
+                      </tr>
+                    </thead>
+                    <tbody id="genderRombelBody"></tbody>
+                    <tfoot id="genderRombelFoot"></tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-xl-6">
+              <div class="card h-100 gender-recap-card">
+                <div class="card-header">
+                  <strong>Grafik Rombel Berdasarkan Jenis Kelamin</strong>
+                </div>
+                <div class="card-body gender-chart-body">
+                  <div class="gender-chart-scroll"><div id="genderRombelChart" class="gender-chart-rombel"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- REKAP AGAMA -->
+      <section class="view" id="view-religion">
+        <div class="section-menu">
+          <button class="btn btn-outline-dark btn-sm active" data-religion-tab="kelas">Per Kelas</button>
+          <button class="btn btn-outline-dark btn-sm" data-religion-tab="rombel">Per Rombel</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><strong id="religionTableTitle">Rekap Agama per Kelas</strong></div>
+          <div class="table-responsive app-table-box">
+            <table class="table table-sm table-striped">
+              <thead id="religionHead"></thead>
+              <tbody id="religionBody"></tbody>
+              <tfoot id="religionFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/students.js"></script>
+  <script src="js/import.js"></script>
+  <script src="js/requests.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/activity.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
