@@ -15,8 +15,8 @@ const APP = {
   VERSION: '46.0-clean-stable',
 
   // Isi HANYA Deployment ID dari Web App /exec.
-  // Contoh: AKfycbXXXXXXXXXXXXXXXXXXXXXXXX
-  DEPLOYMENT_ID: 'TEMPEL_DEPLOYMENT_ID_DI_SINI',
+  // Contoh: https://script.google.com/macros/s/AKfycbynWbliUz7O-tZT47uzaO1BGEne_cHCLEI-LV4PFFxUEoclsWK9YDl1mlshtFoZZDvZRQ/exec
+  DEPLOYMENT_ID: 'AKfycbynWbliUz7O-tZT47uzaO1BGEne_cHCLEI-LV4PFFxUEoclsWK9YDl1mlshtFoZZDvZRQ',
 
   schoolName: 'UPT SPF SMP NEGERI 3 MAKASSAR',
   agama: ['Islam','Kristen','Katholik','Hindu','Budha','Khonghucu','Kepercayaan kpd Tuhan YME','Tidak diisi','Lainnya']
